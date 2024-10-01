@@ -8,6 +8,7 @@ import { Size } from './entities/size.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { IVerifiedRequest } from 'src/interfaces';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -20,7 +21,7 @@ export class ProductService {
   ) {}
 
   @UseGuards(AuthGuard)
-  async findAll() {
+  async findAllProducts() {
     return this.productRepo.find({
       relations: { categories: true, sizes: true, images: true },
     });
@@ -30,8 +31,6 @@ export class ProductService {
     createProductDto: CreateProductDto,
     images: Express.Multer.File[],
   ) {
-    console.log(`🚀 ~ ProductService ~ images:`, images);
-
     const product = new Product();
     product.name = createProductDto.name;
     product.description = createProductDto.description;
@@ -71,7 +70,7 @@ export class ProductService {
 
   async updateProduct(
     id: number,
-    updateProductDto: CreateProductDto,
+    updateProductDto: UpdateProductDto,
     images: Express.Multer.File[],
   ): Promise<Product> {
     const product = await this.productRepo.findOne({
@@ -81,39 +80,50 @@ export class ProductService {
 
     if (!product) throw new BadRequestException(`Product id ${id} not found`);
 
-    product.name = updateProductDto.name;
-    product.description = updateProductDto.description;
-    product.price = updateProductDto.price;
-    product.is_best_seller = updateProductDto.is_best_seller;
-    product.quantity = updateProductDto.quantity;
+    if (updateProductDto.name !== undefined)
+      product.name = updateProductDto.name;
+    if (updateProductDto.description !== undefined)
+      product.description = updateProductDto.description;
+    if (updateProductDto.price !== undefined)
+      product.price = updateProductDto.price;
+    if (updateProductDto.is_best_seller !== undefined)
+      product.is_best_seller = updateProductDto.is_best_seller;
+    if (updateProductDto.quantity !== undefined)
+      product.quantity = updateProductDto.quantity;
 
-    const categories: Category[] = [];
-    for (const categoryName of updateProductDto.categories) {
-      let category = await this.categoryRepo.findOne({
-        where: { name: categoryName },
+    if (updateProductDto.categories) {
+      const categories: Category[] = [];
+      for (const categoryName of updateProductDto.categories) {
+        let category = await this.categoryRepo.findOne({
+          where: { name: categoryName },
+        });
+        if (!category)
+          throw new BadRequestException(`Invalid category: ${categoryName}`);
+
+        categories.push(category);
+      }
+      product.categories = categories;
+    }
+
+    if (updateProductDto.sizes) {
+      const sizes: Size[] = [];
+      for (const sizeName of updateProductDto.sizes) {
+        let size = await this.sizeRepo.findOne({ where: { name: sizeName } });
+        if (!size) throw new BadRequestException(`Invalid size: ${sizeName}`);
+
+        sizes.push(size);
+      }
+      product.sizes = sizes;
+    }
+
+    if (images && images.length > 0) {
+      await this.productImageRepo.remove(product.images);
+      product.images = images.map((image) => {
+        const productImage = new ProductImage();
+        productImage.path = image.path;
+        return productImage;
       });
-      if (!category)
-        throw new BadRequestException(`Invalid category: ${categoryName}`);
-
-      categories.push(category);
     }
-    product.categories = categories;
-
-    const sizes: Size[] = [];
-    for (const sizeName of updateProductDto.sizes) {
-      let size = await this.sizeRepo.findOne({ where: { name: sizeName } });
-      if (!size) throw new BadRequestException(`Invalid size: ${sizeName}`);
-
-      sizes.push(size);
-    }
-    product.sizes = sizes;
-
-    await this.productImageRepo.remove(product.images);
-    product.images = images.map((image) => {
-      const productImage = new ProductImage();
-      productImage.path = image.path;
-      return productImage;
-    });
 
     return await this.productRepo.save(product);
   }

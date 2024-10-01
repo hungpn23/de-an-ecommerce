@@ -20,6 +20,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ParseJsonBodyInterceptor } from 'src/helpers/interceptors';
 import { storageConfig } from 'src/helpers/config';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('product')
 export class ProductController {
@@ -27,7 +28,7 @@ export class ProductController {
 
   @Get()
   async findAll() {
-    return await this.productService.findAll();
+    return await this.productService.findAllProducts();
   }
 
   @UseGuards(AuthGuard)
@@ -59,7 +60,7 @@ export class ProductController {
   )
   async updateProduct(
     @Param('id') id: number,
-    @Body() body: { data: CreateProductDto },
+    @Body() body: { data: UpdateProductDto },
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
@@ -68,9 +69,9 @@ export class ProductController {
         ],
       }),
     )
-    images: Express.Multer.File[],
+    images?: Express.Multer.File[],
   ) {
-    return await this.productService.updateProduct(id, body.data, images);
+    return await this.productService.updateProduct(id, body.data, images || []);
   }
 
   @UseGuards(AuthGuard)
