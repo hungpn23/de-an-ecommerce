@@ -19,8 +19,8 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ParseJsonBodyInterceptor } from 'src/helpers/interceptors';
-import { storageConfig } from 'src/helpers/config';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { memoryStorage } from 'multer';
 
 @Controller('product')
 export class ProductController {
@@ -34,7 +34,7 @@ export class ProductController {
   @UseGuards(AuthGuard)
   @Post('create')
   @UseInterceptors(
-    FilesInterceptor('images', 10, { storage: storageConfig('products') }),
+    FilesInterceptor('images', 10, { storage: memoryStorage() }),
     ParseJsonBodyInterceptor,
   )
   async createProduct(
@@ -55,7 +55,7 @@ export class ProductController {
   @UseGuards(AuthGuard)
   @Put(':id')
   @UseInterceptors(
-    FilesInterceptor('images', 10, { storage: storageConfig('products') }),
+    FilesInterceptor('images', 10, { storage: memoryStorage() }),
     ParseJsonBodyInterceptor,
   )
   async updateProduct(
@@ -67,11 +67,12 @@ export class ProductController {
           new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }),
           new FileTypeValidator({ fileType: /image\/(jpeg|jpg|png)/ }),
         ],
+        fileIsRequired: false,
       }),
     )
-    images?: Express.Multer.File[],
+    images: Express.Multer.File[],
   ) {
-    return await this.productService.updateProduct(id, body.data, images || []);
+    return await this.productService.updateProduct(id, body.data, images);
   }
 
   @UseGuards(AuthGuard)

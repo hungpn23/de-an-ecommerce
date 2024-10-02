@@ -6,9 +6,9 @@ import { Category } from './entities/category.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { Size } from './entities/size.entity';
 import { CreateProductDto } from './dto/create-product.dto';
-import { IVerifiedRequest } from 'src/interfaces';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProductService {
@@ -18,6 +18,7 @@ export class ProductService {
     @InjectRepository(Size) private sizeRepo: Repository<Size>,
     @InjectRepository(ProductImage)
     private productImageRepo: Repository<ProductImage>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @UseGuards(AuthGuard)
@@ -59,9 +60,15 @@ export class ProductService {
     }
     product.sizes = sizes;
 
-    product.images = images.map((image) => {
+    const cloudImages = await Promise.all(
+      images.map(async (image) => {
+        return await this.cloudinaryService.uploadFile(image);
+      }),
+    );
+
+    product.images = cloudImages.map((cloudImage) => {
       const productImage = new ProductImage();
-      productImage.path = image.path;
+      productImage.path = cloudImage.secure_url;
       return productImage;
     });
 
@@ -118,9 +125,16 @@ export class ProductService {
 
     if (images && images.length > 0) {
       await this.productImageRepo.remove(product.images);
-      product.images = images.map((image) => {
+
+      const cloudImages = await Promise.all(
+        images.map(async (image) => {
+          return await this.cloudinaryService.uploadFile(image);
+        }),
+      );
+
+      product.images = cloudImages.map((cloudImage) => {
         const productImage = new ProductImage();
-        productImage.path = image.path;
+        productImage.path = cloudImage.secure_url;
         return productImage;
       });
     }
@@ -135,9 +149,7 @@ export class ProductService {
     });
     if (!product) throw new BadRequestException(`Product id ${id} not found`);
 
-    console.log(product.images);
     await this.productImageRepo.remove(product.images);
-
     return await this.productRepo.remove(product);
   }
 }
