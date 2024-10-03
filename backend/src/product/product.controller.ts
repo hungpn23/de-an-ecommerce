@@ -21,14 +21,15 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { ParseJsonBodyInterceptor } from 'src/helpers/interceptors';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { memoryStorage } from 'multer';
+import { IVerifiedRequest } from 'src/interfaces';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Get()
-  async findAll() {
-    return await this.productService.findAllProducts();
+  async findAll(@Request() req: IVerifiedRequest) {
+    return await this.productService.findAllProducts(req);
   }
 
   @UseGuards(AuthGuard)
@@ -48,8 +49,9 @@ export class ProductController {
       }),
     )
     images: Express.Multer.File[],
+    @Request() req: IVerifiedRequest,
   ) {
-    return await this.productService.createProduct(body.data, images);
+    return await this.productService.createProduct(body.data, images, req);
   }
 
   @UseGuards(AuthGuard)
@@ -71,14 +73,18 @@ export class ProductController {
       }),
     )
     images: Express.Multer.File[],
+    @Request() req: IVerifiedRequest,
   ) {
-    return await this.productService.updateProduct(id, body.data, images);
+    return await this.productService.updateProduct(id, body.data, images, req);
   }
 
   @UseGuards(AuthGuard)
   @Delete(':id')
-  async deleteProduct(@Param('id') id: number) {
-    const product = await this.productService.deleteProduct(id);
+  async deleteProduct(
+    @Param('id') id: number,
+    @Request() req: IVerifiedRequest,
+  ) {
+    const product = await this.productService.deleteProduct(id, req);
     return {
       message: 'success',
       product,

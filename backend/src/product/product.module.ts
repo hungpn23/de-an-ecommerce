@@ -8,11 +8,13 @@ import { Size } from './entities/size.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { User } from 'src/user/entities/user.entity';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Product, Category, Size, ProductImage]),
     CloudinaryModule,
+    UserModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

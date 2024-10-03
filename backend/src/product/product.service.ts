@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
@@ -9,6 +14,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { IVerifiedRequest } from 'src/interfaces';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class ProductService {
@@ -18,11 +25,15 @@ export class ProductService {
     @InjectRepository(Size) private sizeRepo: Repository<Size>,
     @InjectRepository(ProductImage)
     private productImageRepo: Repository<ProductImage>,
+    @InjectRepository(User) private userRepo: Repository<User>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @UseGuards(AuthGuard)
-  async findAllProducts() {
+  async findAllProducts(req: IVerifiedRequest) {
+    const isAdmin = await this.isAdmin(req.user.id);
+    if (!isAdmin) throw new UnauthorizedException('You are not allowed');
+
     return this.productRepo.find({
       relations: { categories: true, sizes: true, images: true },
     });
@@ -31,7 +42,11 @@ export class ProductService {
   async createProduct(
     createProductDto: CreateProductDto,
     images: Express.Multer.File[],
+    req: IVerifiedRequest,
   ) {
+    const isAdmin = await this.isAdmin(req.user.id);
+    if (!isAdmin) throw new UnauthorizedException('You are not allowed');
+
     const product = new Product();
     product.name = createProductDto.name;
     product.description = createProductDto.description;
@@ -72,6 +87,8 @@ export class ProductService {
       return productImage;
     });
 
+    product.user = await this.userRepo.findOne({ where: { id: req.user.id } });
+
     return await this.productRepo.save(product);
   }
 
@@ -79,7 +96,11 @@ export class ProductService {
     id: number,
     updateProductDto: UpdateProductDto,
     images: Express.Multer.File[],
+    req: IVerifiedRequest,
   ): Promise<Product> {
+    const isAdmin = await this.isAdmin(req.user.id);
+    if (!isAdmin) throw new UnauthorizedException('You are not allowed');
+
     const product = await this.productRepo.findOne({
       where: { id },
       relations: { categories: true, sizes: true, images: true },
@@ -142,7 +163,10 @@ export class ProductService {
     return await this.productRepo.save(product);
   }
 
-  async deleteProduct(id: number): Promise<Product> {
+  async deleteProduct(id: number, req: IVerifiedRequest): Promise<Product> {
+    const isAdmin = await this.isAdmin(req.user.id);
+    if (!isAdmin) throw new UnauthorizedException('You are not allowed');
+
     const product = await this.productRepo.findOne({
       where: { id },
       relations: { images: true },
@@ -151,5 +175,10 @@ export class ProductService {
 
     await this.productImageRepo.remove(product.images);
     return await this.productRepo.remove(product);
+  }
+
+  async isAdmin(userId: number): Promise<boolean> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    return user.role === 'admin';
   }
 }

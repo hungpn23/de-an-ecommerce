@@ -4,6 +4,7 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -11,6 +12,7 @@ import {
 import { ProductImage } from './product-image.entity';
 import { Category } from './category.entity';
 import { Size } from './size.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Entity()
 export class Product {
@@ -20,7 +22,7 @@ export class Product {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ type: 'text' })
   description: string;
 
   @Column()
@@ -31,6 +33,9 @@ export class Product {
 
   @Column()
   quantity: number;
+
+  @ManyToOne(() => User, (user) => user.products)
+  user: User;
 
   @OneToMany(() => ProductImage, (image: ProductImage) => image.product, {
     cascade: true,
