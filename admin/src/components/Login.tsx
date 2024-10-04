@@ -1,17 +1,27 @@
-import axios from 'axios';
 import React, { useState } from 'react';
 import sendRequest from '../helpers/axios';
+import { useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [Email, setEmail] = useState('');
   const [Password, setPassword] = useState('');
 
   const onSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
-    try {
-      e.preventDefault();
-      const res = await sendRequest('/auth/login', 'POST', { email: Email, password: Password });
-      console.log(`🚀 ~ onSubmitHandler ~ res:`, res);
-    } catch (error) {}
+    e.preventDefault();
+    sendRequest('/auth/login', 'POST', { email: Email, password: Password })
+      .then(res => {
+        localStorage.setItem('access_token', res.data.access_token);
+        navigate('/');
+      })
+      .catch(e => {
+        if (e instanceof AxiosError) {
+          console.log(e.response?.data.message);
+        } else {
+          console.log('Unknown error');
+        }
+      });
   };
 
   return (
