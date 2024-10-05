@@ -29,7 +29,6 @@ export class ProductService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  @UseGuards(AuthGuard)
   async findAllProducts(req: IVerifiedRequest) {
     const isAdmin = await this.isAdmin(req.user.id);
     if (!isAdmin) throw new UnauthorizedException('You are not allowed');

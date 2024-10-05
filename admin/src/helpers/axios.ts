@@ -3,14 +3,15 @@ import axios, { ResponseType } from 'axios';
 import { serverUrl } from '../App';
 
 export default function sendRequest(
-  endpoint: string,
   method: string,
-  body: Object,
+  endpoint: string,
+  body?: any,
+  contentType: string = 'application/json',
   responseType: ResponseType = 'json'
 ) {
   const headers = {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
+    'Content-Type': contentType,
     'Access-Control-Allow-Origin': '*',
   };
 

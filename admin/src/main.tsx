@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { BrowserRouter, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Login, PrivateRoutes, PublicRoutes } from './components/index.ts';
 import { Add, List, Order } from './pages/index.ts';
 

@@ -27,6 +27,7 @@ import { IVerifiedRequest } from 'src/interfaces';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  @UseGuards(AuthGuard)
   @Get()
   async findAll(@Request() req: IVerifiedRequest) {
     return await this.productService.findAllProducts(req);

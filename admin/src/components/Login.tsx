@@ -10,7 +10,7 @@ export default function Login() {
 
   const onSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    sendRequest('/auth/login', 'POST', { email: Email, password: Password })
+    sendRequest('POST', '/auth/login', { email: Email, password: Password })
       .then(res => {
         localStorage.setItem('access_token', res.data.access_token);
         navigate('/');
